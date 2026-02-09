@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.jlpka.langidentify</groupId>
+        <artifactId>langidentify-parent</artifactId>
+        <version>1.0</version>
+    </parent>
+
+    <artifactId>langidentify-lib</artifactId>
+
+    <name>LangIdentify</name>
+    <description>Fast, high-accuracy language detection for Java. Uses ngram classification augmented with a topwords signal for improved short-text accuracy. Supports 80+ languages.</description>
+    <url>https://github.com/jlpka/langidentify</url>
+
+    <scm>
+        <connection>scm:git:git://github.com/jlpka/langidentify.git</connection>
+        <developerConnection>scm:git:ssh://github.com/jlpka/langidentify.git</developerConnection>
+        <url>https://github.com/jlpka/langidentify</url>
+    </scm>
+
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.deploy.skip>false</maven.deploy.skip>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.jlpka</groupId>
+            <artifactId>cjclassifier</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.jlpka.langidentify</groupId>
+            <artifactId>langidentify-models-lite</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+    </dependencies>
+</project>

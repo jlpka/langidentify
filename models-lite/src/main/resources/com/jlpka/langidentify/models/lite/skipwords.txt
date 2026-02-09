@@ -1,0 +1,19 @@
+# Skipwords file - these will be ignored for scoring purposes.
+# It's safest to avoid words with vowels here, or ones with real meanings in any language.
+www
+http
+https
+pdf
+jpg
+txt
+# metric units
+km
+cm
+ml
+cc
+cl
+ms
+mhz
+khz
+ghz
+utc
