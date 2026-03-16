@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.jlpka.langidentify</groupId>
+        <artifactId>langidentify-parent</artifactId>
+        <version>1.0.1</version>
+    </parent>
+
+    <artifactId>langidentify-models-lite</artifactId>
+    <packaging>jar</packaging>
+    <name>LangIdentify Models (Lite)</name>
+    <description>Compact language detection model data for LangIdentify. Covers 80+ languages with reduced ngram/topword sets for smaller download size.</description>
+    <url>https://github.com/jlpka/langidentify</url>
+
+    <scm>
+        <connection>scm:git:git://github.com/jlpka/langidentify.git</connection>
+        <developerConnection>scm:git:ssh://github.com/jlpka/langidentify.git</developerConnection>
+        <url>https://github.com/jlpka/langidentify</url>
+    </scm>
+
+    <properties>
+        <maven.deploy.skip>false</maven.deploy.skip>
+    </properties>
+</project>
