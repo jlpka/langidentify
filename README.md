@@ -158,8 +158,8 @@ Lingua: 75) and evaluated on 10 European language test sets (1,000 sentences eac
 
 | Language | LangIdentify (full) | LangIdentify (lite) | Lingua | Shuyo LangDetect |
 |----------|:-------------------:|:-------------------:|:------:|:-----------------:|
-| English  | **99.9%** | 99.9% | 99.1% | 99.3% |
-| French   | **99.7%** | 99.7% | 98.8% | 99.0% |
+| English  | **100.0%** | 99.9% | 99.1% | 99.3% |
+| French   | **99.8%** | 99.7% | 98.8% | 99.0% |
 | German   | **99.9%** | 99.8% | 99.7% | 99.8% |
 | Danish   | **99.6%** | 98.9% | 97.8% | 94.3% |
 | Finnish  | **100.0%** | 100.0% | 100.0% | 99.9% |
@@ -167,24 +167,24 @@ Lingua: 75) and evaluated on 10 European language test sets (1,000 sentences eac
 | Spanish  | **99.7%** | 99.4% | 96.7% | 97.3% |
 | Portuguese | **99.8%** | 99.8% | 97.9% | 98.8% |
 | Dutch    | **100.0%** | 100.0% | 96.2% | 97.0% |
-| Swedish  | **99.3%** | 98.8% | 98.7% | 96.3% |
+| Swedish  | **99.4%** | 98.8% | 98.7% | 96.3% |
 
 ### Word pairs (Lingua test corpus, all supported languages loaded) -- where short-text accuracy matters most
 
 | Language | LangIdentify (full) | LangIdentify (lite) | Lingua | Shuyo LangDetect |
 |----------|:-------------------:|:-------------------:|:------:|:-----------------:|
-| English  | 83.4% | 78.9% | **88.6%** | 57.7% |
-| French   | **95.9%** | 92.9% | 94.5% | 78.6% |
-| German   | **94.9%** | 91.2% | 94.1% | 72.7% |
-| Danish   | **84.9%** | 80.2% | 83.9% | 69.0% |
+| English  | **94.3%** | 91.4% | 88.6% | 57.7% |
+| French   | **96.1%** | 93.6% | 94.5% | 78.6% |
+| German   | **94.6%** | 90.8% | 94.1% | 72.7% |
+| Danish   | **84.9%** | 80.6% | 83.9% | 69.0% |
 | Finnish  | **98.8%** | 97.9% | 98.0% | 95.5% |
-| Italian  | **96.4%** | 93.7% | 91.9% | 81.2% |
-| Spanish  | **78.9%** | 75.7% | 68.7% | 43.5% |
-| Portuguese | **88.6%** | 83.3% | 85.3% | 58.3% |
-| Dutch    | **84.7%** | 77.3% | 80.7% | 49.6% |
-| Swedish  | **91.1%** | 82.7% | 88.6% | 66.5% |
+| Italian  | **95.9%** | 93.5% | 91.9% | 81.2% |
+| Spanish  | **79.2%** | 76.1% | 68.7% | 43.5% |
+| Portuguese | **88.5%** | 83.4% | 85.3% | 58.3% |
+| Dutch    | **83.2%** | 75.5% | 80.7% | 49.6% |
+| Swedish  | **91.2%** | 82.8% | 88.6% | 66.5% |
 
-LangIdentify wins 9 of 10 languages; Lingua edges it out on English. The advantage is most
+LangIdentify wins all 10 languages. The advantage is most
 pronounced on short text, where the topwords signal makes the biggest difference. Note that
 word-pair accuracy drops for all libraries when the full language set is loaded, since
 two-word phrases are inherently ambiguous and more candidate languages increase the chance of
