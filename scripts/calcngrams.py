@@ -14,7 +14,7 @@ WIKI_DERIVED = "../wikidata/derived"
 
 def run_java(lang:str, alphabet:str, skipwords:str):
     cmd = [
-        "java", "-cp", "tools/target/langidentify-tools-1.0.jar",
+        "java", "-cp", "tools/target/langidentify-tools-1.0.2.jar",
         "com.jlpka.langidentify.tools.ModelBuilder", "ngrams",
         "--infile", f"{WIKI_ORIG}/{lang}wiki-20260201-pages-articles.xml.bz2",
         "--outfile", f"{WIKI_DERIVED}/ngrams-{lang}.txt",

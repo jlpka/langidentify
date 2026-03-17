@@ -189,7 +189,8 @@ public enum Language {
 
   /**
    * Parses a comma-separated string of language codes into a list. E.g. "en,fr,de" -> [ENGLISH,
-   * FRENCH, GERMAN]. Also supports group aliases such as "cjk" or "europe_west_common".
+   * FRENCH, GERMAN]. Also supports group aliases such as "cjk" or "europe_west_common" or
+   * "unique_alphabet" (languages such as Thai or Greek where the alphabet is determinative).
    *
    * @throws IllegalArgumentException if any code is unrecognized
    */
@@ -215,14 +216,22 @@ public enum Language {
 
   private static final Language[] VALUES = values();
 
+  /** We provide a set of convenience aliases, which can be parsed via fromCommaSeparated().
+   * Or, define your own specific aliases. */
+
+  /** English + French/Italian/German/Spanish */
   public static Set<Language> EFIGS =
       Collections.unmodifiableSet(EnumSet.of(ENGLISH, FRENCH, ITALIAN, GERMAN, SPANISH));
+  /** English + French/Italian/German/Spanish + Dutch + Portuguese */
   public static Set<Language> EFIGSNP =
       Collections.unmodifiableSet(
           EnumSet.of(ENGLISH, FRENCH, ITALIAN, GERMAN, SPANISH, DUTCH, PORTUGUESE));
+  /** Nordic Languages but we don't differentiate Norwegian Bokmal from Nynorsk. */
   public static Set<Language> NORDIC_COMMON =
       Collections.unmodifiableSet(EnumSet.of(DANISH, SWEDISH, NORWEGIAN, FINNISH));
+  /** A set of common western European languages */
   public static Set<Language> EUROPE_WEST_COMMON = union(EFIGSNP, NORDIC_COMMON);
+  /** Supported European languages with the Latin alphabet. */
   public static Set<Language> EUROPE_LATIN =
       Collections.unmodifiableSet(
           EnumSet.of(
@@ -256,6 +265,7 @@ public enum Language {
               SWEDISH,
               TURKISH,
               WELSH));
+  /** Supported Eastern European languages with the Latin alphabet. */
   public static Set<Language> EUROPE_EAST_LATIN =
       Collections.unmodifiableSet(
           EnumSet.of(
@@ -270,23 +280,34 @@ public enum Language {
               ROMANIAN,
               SLOVAK,
               SLOVENIAN));
+  /** A set of European languages with the Cyrillic alphabet. */
   public static Set<Language> EUROPE_CYRILLIC =
       Collections.unmodifiableSet(
           EnumSet.of(BELARUSIAN, BULGARIAN, MACEDONIAN, RUSSIAN, SERBIAN, UKRAINIAN));
+  /** Set of supported European languages. */
   public static Set<Language> EUROPE = union(EUROPE_LATIN, EUROPE_CYRILLIC);
   public static Set<Language> EUROPE_COMMON =
       union(EUROPE_WEST_COMMON, union(EUROPE_EAST_LATIN, EUROPE_CYRILLIC));
+  /** Encompasses Chinese Simplified and Chinese Traditional. */
   public static Set<Language> CHINESE_SCRIPTS =
       Collections.unmodifiableSet(EnumSet.of(CHINESE_SIMPLIFIED, CHINESE_TRADITIONAL));
+  /** Encompasses Chinese Simplified/Traditional + Japanese. */
   public static Set<Language> CJ =
       Collections.unmodifiableSet(EnumSet.of(CHINESE_SIMPLIFIED, CHINESE_TRADITIONAL, JAPANESE));
+  /** Encompasses Chinese Simplified/Traditional + Japanese + Korean. */
   public static Set<Language> CJK =
       Collections.unmodifiableSet(
           EnumSet.of(CHINESE_SIMPLIFIED, CHINESE_TRADITIONAL, JAPANESE, KOREAN));
 
+  /** Languages with the Latin alphabet like English or French */
   public static Set<Language> LATIN_ALPHABET = languagesForAlphabet(Alphabet.LATIN);
+  /** Languages with the Cyrillic alphabet like Russian or Serbian */
   public static Set<Language> CYRILLIC_ALPHABET = languagesForAlphabet(Alphabet.CYRILLIC);
+  /** Languages with the Arabic alphabet like Arabic or Farsi */
   public static Set<Language> ARABIC_ALPHABET = languagesForAlphabet(Alphabet.ARABIC);
+  /** Languages which have a unique alphabet, e.g. Thai or Greek. Detection of these is trivial. */
+  public static Set<Language> UNIQUE_ALPHABET = uniqueAlphabetLanguages();
+  /** All supported languages. */
   public static Set<Language> ALL = allLanguages();
 
   private static Set<Language> allLanguages() {
@@ -311,7 +332,8 @@ public enum Language {
           Map.entry("europe", EUROPE),
           Map.entry("latin_alphabet", LATIN_ALPHABET),
           Map.entry("cyrillic_alphabet", CYRILLIC_ALPHABET),
-          Map.entry("arabic_alphabet", ARABIC_ALPHABET));
+          Map.entry("arabic_alphabet", ARABIC_ALPHABET),
+          Map.entry("unique_alphabet", UNIQUE_ALPHABET));
 
   /** Returns {@code true} if this is {@code CHINESE_SIMPLIFIED} or {@code CHINESE_TRADITIONAL}. */
   public boolean isChinese() {
@@ -340,6 +362,28 @@ public enum Language {
   private static Set<Language> union(Set<Language> a, Set<Language> b) {
     EnumSet<Language> result = EnumSet.copyOf(a);
     result.addAll(b);
+    return Collections.unmodifiableSet(result);
+  }
+
+  /**
+   * Returns languages whose alphabet is not shared by any other language — detection of these
+   * is trivial. */
+  private static Set<Language> uniqueAlphabetLanguages() {
+    Map<Alphabet, List<Language>> byAlphabet = new HashMap<>();
+    for (Language lang : VALUES) {
+      if (lang == UNKNOWN) continue;
+      for (Alphabet a : lang.getAlphabets()) {
+        byAlphabet.computeIfAbsent(a, k -> new ArrayList<>()).add(lang);
+      }
+    }
+    EnumSet<Language> result = EnumSet.noneOf(Language.class);
+    for (Language lang : VALUES) {
+      if (lang == UNKNOWN || lang.getAlphabets().size() != 1) continue;
+      Alphabet sole = lang.getAlphabets().iterator().next();
+      if (byAlphabet.get(sole).size() == 1) {
+        result.add(lang);
+      }
+    }
     return Collections.unmodifiableSet(result);
   }
 

@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.jlpka.langidentify</groupId>
         <artifactId>langidentify-parent</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
     </parent>
 
     <artifactId>langidentify-lib</artifactId>
@@ -32,7 +32,7 @@
         <dependency>
             <groupId>com.jlpka</groupId>
             <artifactId>cjclassifier</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.2</version>
         </dependency>
         <dependency>
             <groupId>com.jlpka.langidentify</groupId>

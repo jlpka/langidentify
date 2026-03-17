@@ -37,14 +37,14 @@ accuracy on short sentences than existing libraries could provide.
 <dependency>
     <groupId>com.jlpka.langidentify</groupId>
     <artifactId>langidentify-lib</artifactId>
-    <version>1.0</version>
+    <version>1.0.2</version>
 </dependency>
 
 <!-- Bundled model data (choose one) -->
 <dependency>
     <groupId>com.jlpka.langidentify</groupId>
     <artifactId>langidentify-models-lite</artifactId>
-    <version>1.0</version>
+    <version>1.0.2</version>
 </dependency>
 <!-- or: langidentify-models-full for higher accuracy at more memory cost -->
 ```
@@ -106,22 +106,24 @@ Language lang = detector.detect("message", frenchBoost);  // FRENCH
 
 ## Choosing languages
 
-**Only configure the languages you actually need.** Each additional language increases model
+**Try to only configure the languages you actually need.** Each additional language increases model
 loading time, memory usage, and detection latency. More importantly, closely related languages
 can cross-detect on very short phrases -- for example, adding Luxembourgish when you only
 need German may cause short German phrases to be misidentified.
 
-LangIdentify provides convenient group aliases:
+In addition to being able to specify a list of languages, LangIdentify some group aliases for convenience:
 
 | Alias | Languages |
 |-------|-----------|
-| `efigs` | English, French, Italian, German, Spanish |
-| `efigsnp` | EFIGS + Dutch, Portuguese |
+| `latin_alphabet` | All Latin-script languages |
+| `cjk` | Chinese (Simplified), Chinese (Traditional), Japanese, Korean |
+| `cyrillic_alphabet` | All Cyrillic-script languages |
+| `unique_alphabet` | Languages where the alphabet implies a language, e.g. Thai or Greek |
 | `europe_west_common` | EFIGSNP + Danish, Swedish, Norwegian, Finnish |
 | `europe_common` | Western + Eastern European + Cyrillic |
+| `efigs` | English, French, Italian, German, Spanish |
+| `efigsnp` | EFIGS + Dutch, Portuguese |
 | `nordic` | Danish, Swedish, Norwegian, Finnish |
-| `cjk` | Chinese (Simplified), Chinese (Traditional), Japanese, Korean |
-| `latin_alphabet` | All Latin-script languages |
 
 ```java
 List<Language> langs = Language.fromCommaSeparated("europe_west_common,cjk");
@@ -302,6 +304,14 @@ when topword coverage is high (i.e. when many of the input words have topword hi
 For scripts that uniquely identify a language -- such as Thai, Georgian, Armenian, or Burmese --
 detection is immediate based on the script alone, with no ngram lookup required. Ngram data is
 only loaded for alphabets shared by multiple configured languages (e.g. Latin, Cyrillic, Arabic).
+These can be added with the "unique_alphabet" alias.
+
+When text contains multiple scripts (e.g. "He likes to say привет"), words are segmented at
+script boundaries and the **predominant alphabet** is determined by weighted character count.
+CJK ideographs are weighted 3&times; and Korean/Kana 2&times; to reflect their higher linguistic
+density per character. Only languages using the predominant alphabet are considered for the final
+result. For example, "我的名字是Jonathan" detects as Chinese because 4 HAN characters at
+3&times; weight outweigh 8 Latin characters at 1&times;.
 
 ### Chinese, Japanese, and Korean
 
@@ -369,7 +379,7 @@ A new language can be added if it has a reasonably sized Wikipedia edition.
 
 3. **Reduce to model thresholds** using ModelBuilder:
    ```bash
-   export INVOKEBUILDER="java -cp tools/target/langidentify-tools-1.0.jar \
+   export INVOKEBUILDER="java -cp tools/target/langidentify-tools-1.0.2.jar \
        com.jlpka.langidentify.tools.ModelBuilder"
 
    # Lite model (-12/-12)
@@ -423,10 +433,10 @@ mvn clean package
 
 This produces:
 
-- `core/target/langidentify-lib-1.0.jar` -- the core library
-- `models-lite/target/langidentify-models-lite-1.0.jar` -- bundled lite model data
-- `models-full/target/langidentify-models-full-1.0.jar` -- bundled full model data
-- `tools/target/langidentify-tools-1.0.jar` -- uber-JAR for evaluation and model building
+- `core/target/langidentify-lib-1.0.2.jar` -- the core library
+- `models-lite/target/langidentify-models-lite-1.0.2.jar` -- bundled lite model data
+- `models-full/target/langidentify-models-full-1.0.2.jar` -- bundled full model data
+- `tools/target/langidentify-tools-1.0.2.jar` -- uber-JAR for evaluation and model building
 
 To run tests:
 

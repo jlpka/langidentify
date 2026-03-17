@@ -13,7 +13,7 @@ from functools import partial
 
 def run_java(eval_lang: str, language_model: str, limit: int, extra_args: list):
     cmd = [
-        "java", "-jar", "tools/target/langidentify-tools-1.0.jar",
+        "java", "-jar", "tools/target/langidentify-tools-1.0.2.jar",
         "wikieval",
         "--languages", f"{language_model}",
         "--model", "../wikidata/derived/",

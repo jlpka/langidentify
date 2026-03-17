@@ -42,7 +42,7 @@ import javax.xml.stream.*;
  *
  * <pre>
  * # The shade plugin produces a fat jar; invoke via:
- * export INVOKE_EVAL="java -jar tools/target/langidentify-tools-1.0.jar"
+ * export INVOKE_EVAL="java -jar tools/target/langidentify-tools-1.0.2.jar"
  * export WIKI_DERIVED="../wikidata/derived/"
  * export WIKI_ORIG="/Volumes/devdata/wikidata/orig"
  * export PHRASE_TESTDATA="../lingua/src/accuracyReport/resources/language-testdata/sentences/"

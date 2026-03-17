@@ -127,7 +127,8 @@ class DetectorTest {
     assertEquals(Language.UNKNOWN, detector.detect("... --- !!!"));
     assertEquals(0, detector.results().scores.numChars());
     assertEquals(0, detector.results().scores.numWords);
-    assertEquals(Language.UNKNOWN, detector.detect("http://www/"));
+    // these are all on skipwords
+    assertEquals(Language.UNKNOWN, detector.detect("http://www/aaa.html nbsp pdf php html htm Https jpg"));
     assertEquals(0, detector.results().scores.numChars());
     assertEquals(0, detector.results().scores.numWords);
     assertEquals(Language.UNKNOWN, detector.detect("12345 67890"));
@@ -243,12 +244,24 @@ class DetectorTest {
   @Test
   void fromCommaSeparatedGroupAliases() {
     // Group aliases should expand to the full set of languages.
-    assertEquals(List.copyOf(Language.CJK), Language.fromCommaSeparated("cjk"));
+      assertEquals(List.copyOf(Language.CJK), Language.fromCommaSeparated("cjk"));
     assertEquals(
         List.copyOf(Language.EUROPE_CYRILLIC), Language.fromCommaSeparated("europe_cyrillic"));
     assertEquals(
         List.copyOf(Language.EUROPE_WEST_COMMON),
         Language.fromCommaSeparated("europe_west_common"));
+    assertEquals(
+        List.copyOf(Language.UNIQUE_ALPHABET),
+        Language.fromCommaSeparated("unique_alphabet"));
+
+    assertTrue(Language.UNIQUE_ALPHABET.contains(Language.THAI));
+    assertTrue(Language.UNIQUE_ALPHABET.contains(Language.GREEK));
+    assertTrue(Language.UNIQUE_ALPHABET.contains(Language.KOREAN));
+    assertTrue(Language.UNIQUE_ALPHABET.contains(Language.BURMESE));
+    assertFalse(Language.UNIQUE_ALPHABET.contains(Language.ENGLISH));
+    assertFalse(Language.UNIQUE_ALPHABET.contains(Language.ARABIC));
+    assertFalse(Language.UNIQUE_ALPHABET.contains(Language.CHINESE_SIMPLIFIED));
+    assertFalse(Language.UNIQUE_ALPHABET.contains(Language.JAPANESE));
 
     // Groups can be mixed with individual languages.
     List<Language> result = Language.fromCommaSeparated("nordic,ja");

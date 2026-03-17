@@ -22,6 +22,7 @@ import com.jlpka.langidentify.NgramTable;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,7 +43,7 @@ import javax.xml.stream.*;
  * <pre>
  * # The shade plugin produces a fat jar (main class is EvalTool by default);
  * # invoke ModelBuilder explicitly:
- * export INVOKEBUILDER="java -cp tools/target/langidentify-tools-1.0.jar  com.jlpka.langidentify.tools.ModelBuilder"
+ * export INVOKEBUILDER="java -cp tools/target/langidentify-tools-1.0.2.jar  com.jlpka.langidentify.tools.ModelBuilder"
  * export WIKIDERIVED="../wikidata/derived"
  * export WIKIORIG="/Volumes/devdata/wikidata/orig"
  *
@@ -553,6 +554,107 @@ public class ModelBuilder {
         outputLines.size(), outfile, ContentUtils.humanBytes(new File(outfile).length()));
   }
 
+  /**
+   * Loads topwords files for all Latin-alphabet languages from a directory, then prints every word
+   * that appears in more than one language. Each line shows the word followed by language:logprob
+   * pairs in descending probability order. Lines are sorted by the highest (least negative)
+   * probability across languages, descending.
+   */
+  private static void topwordOverlapCommand(String topwordsDir) throws Exception {
+    long startTime = System.currentTimeMillis();
+    Set<Language> latinLangs = Language.LATIN_ALPHABET;
+
+    // word -> (language -> logprob)
+    Map<String, Map<Language, Double>> wordMap = new HashMap<>();
+
+    for (Language lang : latinLangs) {
+      // Try both plain and gzipped variants
+      String base = topwordsDir + "/topwords-" + lang.isoCode();
+      File file = new File(base + ".txt.gz");
+      if (!file.exists()) {
+        file = new File(base + ".txt");
+      }
+      if (!file.exists()) {
+        System.err.printf("Skipping %s (%s): no topwords file found%n",
+            lang.name(), lang.isoCode());
+        continue;
+      }
+
+      long totalCount = 0;
+      try (BufferedReader reader =
+          new BufferedReader(
+              new InputStreamReader(
+                  ContentUtils.openCompressed(file.getPath()), StandardCharsets.UTF_8),
+              1024 * 1024)) {
+        String header = reader.readLine();
+        if (header == null || !header.startsWith("# Count: ")) {
+          System.err.printf("Skipping %s: bad header%n", lang.isoCode());
+          continue;
+        }
+        String afterCount = header.substring("# Count: ".length()).trim();
+        int spIdx = afterCount.indexOf(' ');
+        totalCount = Long.parseLong(spIdx >= 0 ? afterCount.substring(0, spIdx) : afterCount);
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+          if (line.isEmpty() || line.charAt(0) == '#') continue;
+          int spaceIdx = line.lastIndexOf(' ');
+          if (spaceIdx <= 0) continue;
+
+          String word = line.substring(0, spaceIdx);
+          String valueStr = line.substring(spaceIdx + 1);
+
+          double logProb;
+          if (valueStr.charAt(0) == '-') {
+            logProb = Double.parseDouble(valueStr);
+          } else {
+            long count = Long.parseLong(valueStr);
+            logProb = Math.log((double) count / totalCount);
+          }
+
+          wordMap.computeIfAbsent(word, k -> new EnumMap<>(Language.class)).put(lang, logProb);
+        }
+      }
+      System.err.printf("Loaded %s (%s)%n", lang.name(), lang.isoCode());
+    }
+
+    // Collect words that appear in more than one language
+    List<Map.Entry<String, Map<Language, Double>>> overlapping = new ArrayList<>();
+    for (Map.Entry<String, Map<Language, Double>> entry : wordMap.entrySet()) {
+      if (entry.getValue().size() > 1) {
+        overlapping.add(entry);
+      }
+    }
+
+    // Sort lines by highest (least negative) logprob across languages, descending
+    overlapping.sort((a, b) -> {
+      double maxA = a.getValue().values().stream().mapToDouble(Double::doubleValue).max().orElse(-999);
+      double maxB = b.getValue().values().stream().mapToDouble(Double::doubleValue).max().orElse(-999);
+      return Double.compare(maxB, maxA);
+    });
+
+    // Print
+    PrintWriter out = new PrintWriter(
+        new BufferedWriter(
+            new OutputStreamWriter(System.out, StandardCharsets.UTF_8), 1024 * 1024));
+    for (Map.Entry<String, Map<Language, Double>> entry : overlapping) {
+      StringBuilder sb = new StringBuilder(entry.getKey());
+      // Sort language entries by logprob descending
+      List<Map.Entry<Language, Double>> langEntries = new ArrayList<>(entry.getValue().entrySet());
+      langEntries.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
+      for (Map.Entry<Language, Double> le : langEntries) {
+        sb.append(String.format(" %s:%.1f", le.getKey().isoCode(), le.getValue()));
+      }
+      out.println(sb);
+    }
+    out.flush();
+
+    long elapsed = System.currentTimeMillis() - startTime;
+    System.err.printf(
+        "Done. %d overlapping words out of %d total in %.2f seconds%n",
+        overlapping.size(), wordMap.size(), elapsed / 1000.0);
+  }
+
   private static void showLanguagesCommand(String alphabetFilter, boolean fullName) {
     Alphabet alpha = alphabetFilter != null ? Alphabet.fromString(alphabetFilter) : null;
     if (alphabetFilter != null && (alpha == null || alpha == Alphabet.UNKNOWN)) {
@@ -666,6 +768,7 @@ public class ModelBuilder {
             "outfile",
             "alphabet",
             "topwords",
+            "topwords_dir",
             "twminlogprob",
             "minlogprob",
             "culllogprob",
@@ -723,6 +826,9 @@ public class ModelBuilder {
     p("                  --infile <file>         Input topwords file (required)");
     p("                  --outfile <file>        Output topwords file (required, .gz for gzip)");
     p("                  --twminlogprob <val>    Min log-prob threshold (default -16)");
+    p("");
+    p("  topwordoverlap  Show topwords shared across Latin-alphabet languages");
+    p("                  --topwords_dir <dir>    Directory containing topwords-*.txt[.gz]");
     p("");
     p("  showlanguages   List supported languages");
     p("                  --alphabet <alpha>      Filter by alphabet (e.g. LATIN, CYRILLIC)");
@@ -824,6 +930,14 @@ public class ModelBuilder {
         System.exit(1);
       }
       reduceTopwordsCommand(infile, outfile, twminlogprob);
+    } else if (command.equals("topwordoverlap")) {
+      checkUnrecognizedArgs(args, Set.of("topwords_dir"));
+      String topwordsDir = getArg(args, "topwords_dir");
+      if (topwordsDir == null) {
+        System.err.println("Error: topwordoverlap requires --topwords_dir");
+        System.exit(1);
+      }
+      topwordOverlapCommand(topwordsDir);
     } else if (command.equals("showlanguages")) {
       checkUnrecognizedArgs(args, Set.of("alphabet", "fullname"));
       String alphabetFilter = getArg(args, "alphabet");
