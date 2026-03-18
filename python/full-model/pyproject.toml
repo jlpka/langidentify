@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "langidentify-full-model"
+version = "1.0.0"
+description = "High-accuracy full model data for the LangIdentify language detection library. Install via pip install langidentify[full]."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+authors = [
+    {name = "Jeremy Lilley", email = "jeremy@jlilley.net"},
+]
+keywords = ["language-detection", "nlp", "model-data"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Text Processing :: Linguistic",
+]
+
+[project.urls]
+Homepage = "https://github.com/jlpka/langidentify"
+Repository = "https://github.com/jlpka/langidentify"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"langidentify_full_model.data" = ["*.txt.gz", "*.txt"]

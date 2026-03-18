@@ -38,6 +38,9 @@ public enum Language {
   UNKNOWN("", "", "", Collections.emptySet()),
 
   // LATIN alphabet
+  // Afrikaans evolved from Dutch and they remain largely mutually intelligible.
+  // See: https://en.wikipedia.org/wiki/Comparison_of_Afrikaans_and_Dutch
+  // Having both may cause cross-detection (Afrikaans will frequently get detected as Dutch).
   AFRIKAANS("af", "afr", "", Alphabet.LATIN_SET),
   ALBANIAN("sq", "sqi", "", Alphabet.LATIN_SET),
   AZERBAIJANI("az", "aze", "", Alphabet.LATIN_SET),
@@ -63,6 +66,9 @@ public enum Language {
   LATVIAN("lv", "lav", "", Alphabet.LATIN_SET),
   LITHUANIAN("lt", "lit", "", Alphabet.LATIN_SET),
   LUXEMBOURGISH("lb", "ltz", "", Alphabet.LATIN_SET),
+  // Malay and Indonesian are closely related standardizations of the same language.
+  // See: https://en.wikipedia.org/wiki/Comparison_of_Indonesian_and_Standard_Malay
+  // Having both may cause cross-detection (Malay will frequently get detected as Indonesian).
   MALAY("ms", "msa", "malaysian", Alphabet.LATIN_SET),
   MAORI("mi", "mri", "", Alphabet.LATIN_SET),
   // Norwegian: We have both no/nb for Norwegian Bokmal dialect, nn for Norwegian Nynorsk dialect.

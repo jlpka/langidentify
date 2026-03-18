@@ -1,0 +1,10 @@
+# Copied model data (built by `make models`)
+src/langidentify_full_model/data/ngrams-*.txt.gz
+src/langidentify_full_model/data/topwords-*.txt.gz
+src/langidentify_full_model/data/skipwords.txt
+
+# Python
+__pycache__/
+*.egg-info/
+dist/
+build/

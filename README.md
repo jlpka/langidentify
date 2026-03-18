@@ -349,6 +349,22 @@ language cluster without distinguishing dialects, configure just Bokm&aring;l (`
 4x larger training corpus. The two dialects are similar enough that they cross-detect at some
 rate when both are configured.
 
+### Afrikaans and Dutch
+
+Afrikaans is very similar to Dutch — Afrikaans evolved from Dutch dialects spoken by settlers in
+Southern Africa and the two remain
+[largely mutually intelligible](https://en.wikipedia.org/wiki/Comparison_of_Afrikaans_and_Dutch).
+When both are configured, Afrikaans text will frequently cross-detect as Dutch. If you don't need
+to distinguish them, configure only Dutch (`nl`).
+
+### Malay and Indonesian
+
+Malay (`ms`) and Indonesian (`id`) are
+[closely related standardizations](https://en.wikipedia.org/wiki/Comparison_of_Indonesian_and_Standard_Malay)
+of the same Malay language. When both are configured, Malay text will frequently cross-detect as
+Indonesian. If you don't need to distinguish them, configure only Indonesian (`id`), which has a
+larger training corpus.
+
 ### Serbo-Croatian
 
 We use Croatian (`hr`) for Latin-script and Serbian (`sr`) for Cyrillic-script detection.
@@ -401,14 +417,41 @@ A new language can be added if it has a reasonably sized Wikipedia edition.
 
 4. **Add the language enum** in `Language.java` if it doesn't already exist, and rebuild.
 
+## Python port
+
+A pure Python implementation is available in the [`python/`](python/) directory. It uses
+the same model data files and produces equivalent detection results. See the
+[Python README](python/README.md) for full documentation.
+
+### Quick start (Python)
+
+```bash
+cd python
+make models      # copy model data from the Java project
+pip install .
+```
+
+```python
+from langidentify import Detector, Model, Language
+
+languages = Language.from_comma_separated("en,fr,de,es,it")
+model = Model.load(languages)
+detector = Detector(model)
+
+lang = detector.detect("Bonjour le monde")
+print(lang)            # Language.FRENCH
+print(lang.iso_code)   # fr
+```
+
 ## Project structure
 
 ```
 langidentify-parent
-  core/        langidentify-lib       Core detection library
+  core/        langidentify-lib       Core detection library (Java)
   models-lite/ langidentify-models-lite  Bundled lite model data
   models-full/ langidentify-models-full  Bundled full model data
-  tools/       langidentify-tools     Evaluation and model building tools
+  tools/       langidentify-tools     Evaluation and model building tools (Java)
+  python/      langidentify           Pure Python port of the core library
 ```
 
 ## Thread safety

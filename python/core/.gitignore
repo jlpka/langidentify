@@ -1,0 +1,15 @@
+# Model data files (copied from models-lite/ and models-full/ by Makefile)
+src/langidentify/models/lite/*.txt.gz
+src/langidentify/models/lite/skipwords.txt
+src/langidentify/models/full/*.txt.gz
+src/langidentify/models/full/skipwords.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/

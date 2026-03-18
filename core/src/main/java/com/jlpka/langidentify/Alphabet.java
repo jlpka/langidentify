@@ -164,6 +164,8 @@ public enum Alphabet {
       case HANGUL: // fall through
       case JA_KANA:
         return 2.0;
+      case ARABIC:
+        return 1.25;
       default:
         return 1.0;
     }
