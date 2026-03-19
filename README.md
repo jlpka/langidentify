@@ -1,11 +1,14 @@
 # LangIdentify
 
-A fast, accurate language detection library for Java.
+A fast, accurate language detection library available for **Java**, **Rust**, **Python**, and
+**C/C++** (via Rust FFI).
 
 LangIdentify detects the language of text using a combination of ngram frequency analysis and
 whole-word ("topwords") frequency signals, both trained on the Wikipedia corpus.
 It supports 80+ languages across Latin, Cyrillic, Arabic, CJK, and many other scripts.
 It runs entirely offline with no network calls.
+
+All implementations use the same model data files and produce equivalent detection results.
 
 ## Why LangIdentify?
 
@@ -23,7 +26,7 @@ accuracy on short sentences than existing libraries could provide.
 
 - **Accuracy** -- blended ngram + topwords scoring, especially effective on short text
 - **Speed** -- open-addressing hash tables, zero allocations in the detection path, fixed arrays
-- **Low memory** -- the 28-language `europe_common` model is ~60 MB (lite) or ~305 MB (full);
+- **Low memory** -- the 28-language `europe_common` model is ~60 MB (lite) or ~285 MB (full) in Java;
   load only the languages you need
 - **Extensible** -- adding a new language is straightforward if it has a reasonably sized
   Wikipedia edition
@@ -138,7 +141,7 @@ Both models are trained from the same Wikipedia data but cropped at different pr
 | | Lite | Full |
 |---|---|---|
 | Log-probability floor | -12 (&#x2248; 6.1 &times; 10&#x207b;&#x2076;) | -15 (&#x2248; 3.1 &times; 10&#x207b;&#x2077;) |
-| Memory (28 langs) | ~60 MB | ~305 MB |
+| Memory (28 langs) | ~60 MB | ~285 MB |
 | Best for | Most use cases; good accuracy/memory balance | Maximum accuracy when memory is not a concern |
 
 ```java
@@ -230,8 +233,8 @@ since every language must be scored).
 
 | Library | Mwords/s | ns/word |
 |---|:---:|:---:|
-| **LangIdentify (lite)** | **2.92** | **342** |
-| LangIdentify (full) | 1.91 | 523 |
+| **LangIdentify (lite)** | **3.02** | **331** |
+| LangIdentify (full) | 2.07 | 484 |
 | Shuyo LangDetect | 1.03 | 969 |
 | Lingua | 0.17 | 6,016 |
 
@@ -340,7 +343,7 @@ We experimented with topword bigrams (e.g. the French sequence "y a" from "il y 
 the memory cost was not justified by the marginal improvement in aggregate accuracy, even when
 restricted to bigrams of short words.
 
-## Practical notes
+## Language-specific notes
 
 ### Norwegian dialects
 
@@ -417,11 +420,51 @@ A new language can be added if it has a reasonably sized Wikipedia edition.
 
 4. **Add the language enum** in `Language.java` if it doesn't already exist, and rebuild.
 
+## Rust port
+
+A Rust implementation is available in the [`rust/langidentify/`](rust/langidentify/) directory.
+It uses the same model data files and produces equivalent detection results. See the
+[Rust README](rust/langidentify/README.md) for full documentation.
+
+### Quick start (Rust)
+
+```rust
+use langidentify::{Language, Model, Detector};
+use std::sync::Arc;
+
+let languages = Language::from_comma_separated("en,fr,de,es,it").unwrap();
+let model = Arc::new(Model::load_lite(&languages).unwrap());
+let mut detector = Detector::new(model);
+
+assert_eq!(Language::French, detector.detect("Bonjour le monde"));
+```
+
+### Performance relative to Java
+
+Detection speed and memory usage are roughly the same as Java — around 6% faster in some
+benchmarks, with comparable memory footprint.
+
+### C/C++ FFI
+
+The `langidentify-ffi` crate provides a C-compatible shared/static library for use from
+C, C++, or any language with a C FFI. See the
+[FFI README](rust/langidentify/langidentify-ffi/README.md) for the full API reference,
+compiling/linking instructions, and a working example at
+[`rust/eval/src/useffi.c`](rust/eval/src/useffi.c).
+
 ## Python port
 
 A pure Python implementation is available in the [`python/`](python/) directory. It uses
 the same model data files and produces equivalent detection results. See the
 [Python README](python/README.md) for full documentation.
+
+### Performance relative to Java
+
+As a pure-Python implementation with no native extensions, detection is roughly 14× slower
+than Java/Rust at ~5,500 ns/word (lite, 10 languages). Memory usage is significantly higher
+— ~195 MB vs ~17 MB (lite, 10 languages) — due to per-object overhead in CPython's dict and
+float representations. For latency-sensitive or memory-constrained Python applications,
+consider the [Rust FFI bindings](rust/langidentify/langidentify-ffi/README.md).
 
 ### Quick start (Python)
 
@@ -447,11 +490,13 @@ print(lang.iso_code)   # fr
 
 ```
 langidentify-parent
-  core/        langidentify-lib       Core detection library (Java)
+  core/        langidentify-lib         Core detection library (Java)
   models-lite/ langidentify-models-lite  Bundled lite model data
   models-full/ langidentify-models-full  Bundled full model data
-  tools/       langidentify-tools     Evaluation and model building tools (Java)
-  python/      langidentify           Pure Python port of the core library
+  tools/       langidentify-tools       Evaluation and model building tools (Java)
+  python/      langidentify             Pure Python port
+  rust/langidentify/                    Rust port (core library + model crates + FFI)
+  rust/eval/                            Rust benchmarking/evaluation tools + C FFI example
 ```
 
 ## Thread safety

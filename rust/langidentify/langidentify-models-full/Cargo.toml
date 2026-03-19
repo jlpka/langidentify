@@ -2,5 +2,11 @@
 name = "langidentify-models-full"
 version = "0.1.0"
 edition = "2021"
-description = "Full model data for langidentify language detection"
+description = "Full embedded model data for the langidentify language detection library"
 license = "Apache-2.0"
+authors = ["Jeremy Lilley <jeremy@jlilley.net>"]
+repository = "https://github.com/jlpka/langidentify"
+homepage = "https://github.com/jlpka/langidentify"
+readme = "../README.md"
+keywords = ["language-detection", "nlp", "ngram", "model-data"]
+categories = ["text-processing", "internationalization"]

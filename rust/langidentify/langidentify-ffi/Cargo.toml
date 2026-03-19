@@ -1,0 +1,21 @@
+[package]
+name = "langidentify-ffi"
+version = "0.1.0"
+edition = "2021"
+description = "C FFI bindings for the langidentify language detection library"
+license = "Apache-2.0"
+authors = ["Jeremy Lilley <jeremy@jlilley.net>"]
+repository = "https://github.com/jlpka/langidentify"
+homepage = "https://github.com/jlpka/langidentify"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[features]
+default = []
+lite = ["langidentify/lite"]
+full = ["langidentify/full"]
+
+[dependencies]
+langidentify = { path = "../langidentify" }

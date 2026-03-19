@@ -3,5 +3,6 @@ members = [
     "langidentify",
     "langidentify-models-lite",
     "langidentify-models-full",
+    "langidentify-ffi",
 ]
 resolver = "2"

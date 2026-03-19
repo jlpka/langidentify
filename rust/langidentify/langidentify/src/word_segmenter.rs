@@ -49,9 +49,7 @@ impl WordSegmenter {
     {
         self.init();
         for (i, c) in text.chars().enumerate() {
-            if let Some((wlen, aidx, is_cj)) = self.handle_char(c, i, model) {
-                on_word(&self.word_buf, wlen, aidx, is_cj);
-            }
+            self.handle_char(c, i, model, &mut on_word);
         }
         if self.word_start >= 0 {
             if let Some((wlen, aidx, is_cj)) = self.emit_word(model) {
@@ -67,9 +65,7 @@ impl WordSegmenter {
     {
         self.init();
         for (i, &c) in text.iter().enumerate() {
-            if let Some((wlen, aidx, is_cj)) = self.handle_char(c, i, model) {
-                on_word(&self.word_buf, wlen, aidx, is_cj);
-            }
+            self.handle_char(c, i, model, &mut on_word);
         }
         if self.word_start >= 0 {
             if let Some((wlen, aidx, is_cj)) = self.emit_word(model) {
@@ -78,18 +74,27 @@ impl WordSegmenter {
         }
     }
 
-    /// Process a character. Returns Some((word_len, alpha_idx, is_cj)) when a word is emitted.
-    fn handle_char(&mut self, c: char, pos: usize, model: &Model) -> Option<(usize, usize, bool)> {
+    /// Process a character, calling on_word when a word boundary is reached.
+    fn handle_char<F>(
+        &mut self,
+        c: char,
+        pos: usize,
+        model: &Model,
+        on_word: &mut F,
+    ) where
+        F: FnMut(&[char], usize, usize, bool),
+    {
         let alpha = Alphabet::get_alphabet(c);
         let alpha_idx = model.alphabet_index(alpha);
 
         if let Some(aidx) = alpha_idx {
-            let mut emitted = None;
             if self.word_alpha_idx >= 0
                 && aidx as i32 != self.word_alpha_idx
                 && self.word_start >= 0
             {
-                emitted = self.emit_word(model);
+                if let Some((wlen, wa, is_cj)) = self.emit_word(model) {
+                    on_word(&self.word_buf, wlen, wa, is_cj);
+                }
             }
             if self.word_len < MAX_WORD_LEN {
                 self.word_buf[self.word_len] = c.to_lowercase().next().unwrap_or(c);
@@ -97,7 +102,9 @@ impl WordSegmenter {
             } else if model.is_cj_alphabet(self.word_alpha_idx as usize) {
                 // CJ special case: higher limit + emit partial word
                 if self.word_len == MAX_CJ_WORD_LEN {
-                    emitted = self.emit_word(model);
+                    if let Some((wlen, wa, is_cj)) = self.emit_word(model) {
+                        on_word(&self.word_buf, wlen, wa, is_cj);
+                    }
                 }
                 if self.word_len < MAX_CJ_WORD_LEN {
                     self.word_buf[self.word_len] = c;
@@ -108,10 +115,8 @@ impl WordSegmenter {
                 self.word_start = pos as i32;
             }
             self.word_alpha_idx = aidx as i32;
-            emitted
         } else if c >= '0' && c <= '9' {
             self.special_cases |= HAS_DIGIT;
-            None
         } else if self.word_start >= 0
             && (c == '\'' || c == '\u{2019}' || c == '\u{0092}')
             && self.word_len > 0
@@ -122,15 +127,13 @@ impl WordSegmenter {
                 self.word_buf[self.word_len] = '\'';
                 self.word_len += 1;
             }
-            None
         } else {
-            let emitted = if self.word_start >= 0 {
-                self.emit_word(model)
-            } else {
-                None
-            };
+            if self.word_start >= 0 {
+                if let Some((wlen, wa, is_cj)) = self.emit_word(model) {
+                    on_word(&self.word_buf, wlen, wa, is_cj);
+                }
+            }
             self.special_cases = 0;
-            emitted
         }
     }
 

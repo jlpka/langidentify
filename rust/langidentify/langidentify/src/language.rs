@@ -507,6 +507,18 @@ fn group_alias(name: &str) -> Option<&'static [Language]> {
         "europe_latin" => Some(EUROPE_LATIN),
         "europe_east_latin" => Some(EUROPE_EAST_LATIN),
         "europe_cyrillic" => Some(EUROPE_CYRILLIC),
+        "europe_common" => {
+            static LANGS: OnceLock<Vec<Language>> = OnceLock::new();
+            Some(LANGS.get_or_init(|| {
+                union_slices(&[EUROPE_WEST_COMMON, EUROPE_EAST_LATIN, EUROPE_CYRILLIC])
+            }))
+        }
+        "europe" => {
+            static LANGS: OnceLock<Vec<Language>> = OnceLock::new();
+            Some(LANGS.get_or_init(|| {
+                union_slices(&[EUROPE_LATIN, EUROPE_CYRILLIC])
+            }))
+        }
         "latin_alphabet" => {
             static LATIN_LANGS: OnceLock<Vec<Language>> = OnceLock::new();
             Some(LATIN_LANGS.get_or_init(|| languages_for_alphabet(Alphabet::Latin)))
@@ -525,6 +537,18 @@ fn group_alias(name: &str) -> Option<&'static [Language]> {
         }
         _ => None,
     }
+}
+
+fn union_slices(slices: &[&[Language]]) -> Vec<Language> {
+    let mut set = std::collections::HashSet::new();
+    for s in slices {
+        for &l in *s {
+            set.insert(l);
+        }
+    }
+    let mut v: Vec<Language> = set.into_iter().collect();
+    v.sort_by_key(|l| l.iso_code());
+    v
 }
 
 fn languages_for_alphabet(alpha: Alphabet) -> Vec<Language> {

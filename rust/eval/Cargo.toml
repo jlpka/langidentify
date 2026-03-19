@@ -2,8 +2,12 @@
 name = "langidentify-eval"
 version = "0.1.0"
 edition = "2021"
-description = "Evaluation and benchmarking tools for langidentify"
+description = "Evaluation and benchmarking tools for the langidentify language detection library"
 license = "Apache-2.0"
+authors = ["Jeremy Lilley <jeremy@jlilley.net>"]
+repository = "https://github.com/jlpka/langidentify"
+homepage = "https://github.com/jlpka/langidentify"
+publish = false
 
 [[bin]]
 name = "adhoc"
@@ -25,7 +29,17 @@ path = "src/model_load_speed.rs"
 name = "langidentify_eval"
 path = "src/lib.rs"
 
+# Using local path dependencies (for development within this repo):
 [dependencies]
 langidentify = { path = "../langidentify/langidentify" }
 langidentify-models-lite = { path = "../langidentify/langidentify-models-lite" }
 langidentify-models-full = { path = "../langidentify/langidentify-models-full" }
+
+# To depend on the crates.io package instead, replace the above with:
+#
+# [dependencies]
+# langidentify = { version = "0.1", features = ["lite"] }
+# # or features = ["full"], or features = ["lite", "full"] for both
+#
+# The model data is pulled in transitively via feature flags, so you don't
+# need to list the model crates separately.

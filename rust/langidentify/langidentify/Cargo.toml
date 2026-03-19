@@ -2,8 +2,14 @@
 name = "langidentify"
 version = "0.1.0"
 edition = "2021"
-description = "Fast, accurate language detection using n-gram and topword scoring"
+description = "Fast, high-accuracy language detection for Rust. Uses ngram classification augmented with a topwords signal for improved short-text accuracy. Supports 80+ languages."
 license = "Apache-2.0"
+authors = ["Jeremy Lilley <jeremy@jlilley.net>"]
+repository = "https://github.com/jlpka/langidentify"
+homepage = "https://github.com/jlpka/langidentify"
+readme = "../README.md"
+keywords = ["language-detection", "nlp", "ngram", "text-classification"]
+categories = ["text-processing", "internationalization"]
 
 [features]
 default = []
@@ -14,8 +20,8 @@ full = ["dep:langidentify-models-full"]
 flate2 = "1"
 log = "0.4"
 cjclassifier = "0.1.0"
-langidentify-models-lite = { path = "../langidentify-models-lite", optional = true }
-langidentify-models-full = { path = "../langidentify-models-full", optional = true }
+langidentify-models-lite = { version = "0.1.0", path = "../langidentify-models-lite", optional = true }
+langidentify-models-full = { version = "0.1.0", path = "../langidentify-models-full", optional = true }
 
 [dev-dependencies]
-langidentify-models-lite = { path = "../langidentify-models-lite" }
+langidentify-models-lite = { version = "0.1.0", path = "../langidentify-models-lite" }

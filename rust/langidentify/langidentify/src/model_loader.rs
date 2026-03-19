@@ -16,7 +16,7 @@ use std::path::Path;
 // ResourceResolver abstraction
 // ========================================================================
 
-trait ResourceResolver {
+trait ResourceResolver: Send + Sync {
     fn open(&self, name: &str) -> io::Result<Box<dyn BufRead>>;
     fn exists(&self, name: &str) -> bool;
 }
@@ -214,116 +214,139 @@ fn actually_load(
     let has_zh_hant = ordered_langs.contains(&Language::ChineseTraditional);
     let needs_cj = (has_ja && (has_zh_hans || has_zh_hant)) || (has_zh_hans && has_zh_hant);
 
-    // --- Load ngrams ---
-    let load_max_ngram = 5usize;
-    let mut builders: Vec<NgramTableBuilder> = (0..load_max_ngram)
-        .map(|_| NgramTableBuilder::new())
-        .collect();
-    let mut ngram_infos: Vec<LoadNgramInfo> = (0..ordered_langs.len())
-        .map(|_| LoadNgramInfo {
-            wanted_min_log_prob: load_min_log_prob,
-            count: 0,
-            seen_min_log_prob: f64::NAN,
-            seen_max_ngram: 0,
-        })
-        .collect();
+    // --- Parallel loading of ngrams, topwords, and CJ classifier ---
+    type NgramResult = io::Result<(Vec<NgramTable>, Vec<LoadNgramInfo>, usize, f64)>;
+    type TopwordResult = io::Result<(NgramTable, f64)>;
+    type CjResult = Option<std::sync::Arc<cjclassifier::CJClassifier>>;
 
-    for li in 0..ordered_langs.len() {
-        if let Some(ref name) = ngram_names[li] {
-            load_language_ngrams(
-                resolver,
-                name,
-                li as u32,
-                &mut builders,
-                &mut ngram_infos[li],
-            )?;
-        }
-    }
+    let (ngram_result, topword_result, cj_classifier) = std::thread::scope(|s| {
+        // Thread 1: Load and compact ngrams
+        let ngram_handle = s.spawn(|| -> NgramResult {
+            let load_max_ngram = 5usize;
+            let mut builders: Vec<NgramTableBuilder> = (0..load_max_ngram)
+                .map(|_| NgramTableBuilder::new())
+                .collect();
+            let mut ngram_infos: Vec<LoadNgramInfo> = (0..ordered_langs.len())
+                .map(|_| LoadNgramInfo {
+                    wanted_min_log_prob: load_min_log_prob,
+                    count: 0,
+                    seen_min_log_prob: f64::NAN,
+                    seen_max_ngram: 0,
+                })
+                .collect();
 
-    let mut eff_max_ngram = 0usize;
-    for info in &ngram_infos {
-        eff_max_ngram = eff_max_ngram.max(info.seen_max_ngram);
-    }
-    if eff_max_ngram == 0 {
-        eff_max_ngram = load_max_ngram;
-    }
-
-    // Compute global compact floor
-    let mut compact_floor = load_min_log_prob;
-    for info in &ngram_infos {
-        if !info.seen_min_log_prob.is_nan() {
-            compact_floor = compact_floor.max(info.seen_min_log_prob);
-        }
-    }
-    if compact_floor == f64::MIN {
-        compact_floor = 0.0;
-    }
-
-    // Build ngram tables (only up to eff_max_ngram)
-    let mut tables: Vec<NgramTable> = Vec::with_capacity(eff_max_ngram);
-    for n in 0..eff_max_ngram {
-        let builder = std::mem::replace(&mut builders[n], NgramTableBuilder::new());
-        tables.push(builder.compact(compact_floor as f32));
-    }
-
-    // --- Load topwords ---
-    let topwords_table = if !skip_topwords {
-        let mut tw_builder = NgramTableBuilder::new();
-
-        // Load skipwords
-        if resolver.exists("skipwords.txt") {
-            load_skip_words(resolver, "skipwords.txt", &mut tw_builder)?;
-        }
-
-        let mut tw_compact_floor = load_tw_min_log_prob;
-        let mut any_tw_loaded = false;
-
-        for li in 0..ordered_langs.len() {
-            if let Some(ref name) = topword_names[li] {
-                let file_min_log_prob = load_top_words(
-                    resolver,
-                    name,
-                    li as u32,
-                    &mut tw_builder,
-                    load_tw_min_log_prob,
-                )?;
-                if !file_min_log_prob.is_nan() {
-                    tw_compact_floor = tw_compact_floor.max(file_min_log_prob);
+            for li in 0..ordered_langs.len() {
+                if let Some(ref name) = ngram_names[li] {
+                    load_language_ngrams(
+                        resolver,
+                        name,
+                        li as u32,
+                        &mut builders,
+                        &mut ngram_infos[li],
+                    )?;
                 }
-                any_tw_loaded = true;
             }
-        }
 
-        if tw_compact_floor == f64::MIN {
-            tw_compact_floor = 0.0;
-        }
-
-        if any_tw_loaded {
-            tw_builder.compact(tw_compact_floor as f32)
-        } else {
-            NgramTable::empty()
-        }
-    } else {
-        NgramTable::empty()
-    };
-
-    // --- Load CJ classifier ---
-    let cj_classifier = if needs_cj {
-        let cjc = if cj_min_log_prob != 0.0 {
-            CJClassifier::load_with_floor(cj_min_log_prob)
-        } else {
-            CJClassifier::load()
-        };
-        match cjc {
-            Ok(arc) => Some(arc),
-            Err(e) => {
-                log::warn!("Failed to load CJClassifier: {}", e);
-                None
+            let mut eff_max_ngram = 0usize;
+            for info in &ngram_infos {
+                eff_max_ngram = eff_max_ngram.max(info.seen_max_ngram);
             }
-        }
-    } else {
-        None
-    };
+            if eff_max_ngram == 0 {
+                eff_max_ngram = load_max_ngram;
+            }
+
+            let mut compact_floor = load_min_log_prob;
+            for info in &ngram_infos {
+                if !info.seen_min_log_prob.is_nan() {
+                    compact_floor = compact_floor.max(info.seen_min_log_prob);
+                }
+            }
+            if compact_floor == f64::MIN {
+                compact_floor = 0.0;
+            }
+
+            let mut tables: Vec<NgramTable> = Vec::with_capacity(eff_max_ngram);
+            for n in 0..eff_max_ngram {
+                let builder = std::mem::replace(&mut builders[n], NgramTableBuilder::new());
+                tables.push(builder.compact(compact_floor as f32));
+            }
+
+            Ok((tables, ngram_infos, eff_max_ngram, compact_floor))
+        });
+
+        // Thread 2: Load and compact topwords
+        let topword_handle = s.spawn(|| -> TopwordResult {
+            if skip_topwords {
+                return Ok((NgramTable::empty(), 0.0));
+            }
+
+            let mut tw_builder = NgramTableBuilder::new();
+
+            if resolver.exists("skipwords.txt") {
+                load_skip_words(resolver, "skipwords.txt", &mut tw_builder)?;
+            }
+
+            let mut tw_compact_floor = load_tw_min_log_prob;
+            let mut any_tw_loaded = false;
+
+            for li in 0..ordered_langs.len() {
+                if let Some(ref name) = topword_names[li] {
+                    let file_min_log_prob = load_top_words(
+                        resolver,
+                        name,
+                        li as u32,
+                        &mut tw_builder,
+                        load_tw_min_log_prob,
+                    )?;
+                    if !file_min_log_prob.is_nan() {
+                        tw_compact_floor = tw_compact_floor.max(file_min_log_prob);
+                    }
+                    any_tw_loaded = true;
+                }
+            }
+
+            if tw_compact_floor == f64::MIN {
+                tw_compact_floor = 0.0;
+            }
+
+            let table = if any_tw_loaded {
+                tw_builder.compact(tw_compact_floor as f32)
+            } else {
+                NgramTable::empty()
+            };
+
+            Ok((table, tw_compact_floor))
+        });
+
+        // Thread 3: Load CJ classifier
+        let cj_handle = s.spawn(|| -> CjResult {
+            if !needs_cj {
+                return None;
+            }
+            let cjc = if cj_min_log_prob != 0.0 {
+                CJClassifier::load_with_floor(cj_min_log_prob)
+            } else {
+                CJClassifier::load()
+            };
+            match cjc {
+                Ok(arc) => Some(arc),
+                Err(e) => {
+                    log::warn!("Failed to load CJClassifier: {}", e);
+                    None
+                }
+            }
+        });
+
+        // Join all threads
+        let ngram_result = ngram_handle.join().expect("ngram loading thread panicked");
+        let topword_result = topword_handle.join().expect("topword loading thread panicked");
+        let cj_classifier = cj_handle.join().expect("CJ classifier loading thread panicked");
+
+        (ngram_result, topword_result, cj_classifier)
+    });
+
+    let (tables, ngram_infos, eff_max_ngram, compact_floor) = ngram_result?;
+    let (topwords_table, _tw_compact_floor) = topword_result?;
 
     // Compute effective values
     let mut effective_min_log_prob = load_min_log_prob;
@@ -336,16 +359,6 @@ fn actually_load(
         effective_min_log_prob = 0.0;
     }
 
-    let mut effective_tw_min_log_prob = load_tw_min_log_prob;
-    if !skip_topwords {
-        // already computed above via tw_compact_floor, but re-derive from the same data
-        // tw min log prob already captured via compact_floor above
-    }
-    if effective_tw_min_log_prob == f64::MIN {
-        effective_tw_min_log_prob = 0.0;
-    }
-
-    let _ = effective_tw_min_log_prob; // use the computed compact floor instead
     let effective_tw_min_log_prob = if skip_topwords {
         0.0
     } else {
