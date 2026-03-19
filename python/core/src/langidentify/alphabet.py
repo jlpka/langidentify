@@ -14,6 +14,7 @@
 
 """Writing systems used to classify characters during language detection."""
 
+import bisect
 from enum import Enum, auto
 
 
@@ -51,13 +52,7 @@ class Alphabet(Enum):
         letters, so they are weighted higher when determining the predominant
         alphabet.
         """
-        if self == Alphabet.HAN:
-            return 3.0
-        if self in (Alphabet.HANGUL, Alphabet.JA_KANA):
-            return 2.0
-        if self == Alphabet.ARABIC:
-            return 1.25
-        return 1.0
+        return _WEIGHTS.get(self, 1.0)
 
     @staticmethod
     def from_string(s):
@@ -75,12 +70,145 @@ LATIN_SET = frozenset([Alphabet.LATIN])
 CYRILLIC_SET = frozenset([Alphabet.CYRILLIC])
 ARABIC_SET = frozenset([Alphabet.ARABIC])
 
+_WEIGHTS = {
+    Alphabet.HAN: 3.0,
+    Alphabet.HANGUL: 2.0,
+    Alphabet.JA_KANA: 2.0,
+    Alphabet.ARABIC: 1.25,
+}
+
 # Precomputed set of ASCII letter code points for fast Latin detection.
 _ASCII_LETTERS = set()
 for _c in range(128):
     if chr(_c).isalpha():
         _ASCII_LETTERS.add(_c)
 _ASCII_LETTERS = frozenset(_ASCII_LETTERS)
+
+
+# Sorted table of (range_start, range_end, Alphabet) for binary search.
+# Adjacent ranges for the same script are merged where possible.
+_ALPHABET_RANGES = [
+    # Latin Extended-A/B + supplement
+    (0x00C0, 0x024F, Alphabet.LATIN),
+    # Greek
+    (0x0370, 0x03FF, Alphabet.GREEK),
+    # Cyrillic + Supplement (merged 0400-04FF, 0500-052F)
+    (0x0400, 0x052F, Alphabet.CYRILLIC),
+    # Armenian
+    (0x0530, 0x058F, Alphabet.ARMENIAN),
+    # Hebrew
+    (0x0590, 0x05FF, Alphabet.HEBREW),
+    # Arabic
+    (0x0600, 0x06FF, Alphabet.ARABIC),
+    # Arabic Supplement
+    (0x0750, 0x077F, Alphabet.ARABIC),
+    # Arabic Extended-A
+    (0x08A0, 0x08FF, Alphabet.ARABIC),
+    # Devanagari
+    (0x0900, 0x097F, Alphabet.DEVANAGARI),
+    # Bengali
+    (0x0980, 0x09FF, Alphabet.BENGALI),
+    # Gurmukhi
+    (0x0A00, 0x0A7F, Alphabet.GURMUKHI),
+    # Gujarati
+    (0x0A80, 0x0AFF, Alphabet.GUJARATI),
+    # Tamil
+    (0x0B80, 0x0BFF, Alphabet.TAMIL),
+    # Telugu
+    (0x0C00, 0x0C7F, Alphabet.TELUGU),
+    # Kannada
+    (0x0C80, 0x0CFF, Alphabet.KANNADA),
+    # Malayalam
+    (0x0D00, 0x0D7F, Alphabet.MALAYALAM),
+    # Sinhala
+    (0x0D80, 0x0DFF, Alphabet.SINHALA),
+    # Thai
+    (0x0E00, 0x0E7F, Alphabet.THAI),
+    # Lao
+    (0x0E80, 0x0EFF, Alphabet.LAO),
+    # Myanmar
+    (0x1000, 0x109F, Alphabet.MYANMAR),
+    # Georgian
+    (0x10A0, 0x10FF, Alphabet.GEORGIAN),
+    # Hangul Jamo
+    (0x1100, 0x11FF, Alphabet.HANGUL),
+    # Ethiopic (merged 1200-137F, 1380-139F)
+    (0x1200, 0x139F, Alphabet.ETHIOPIC),
+    # Khmer
+    (0x1780, 0x17FF, Alphabet.KHMER),
+    # Georgian Supplement
+    (0x1C90, 0x1CBF, Alphabet.GEORGIAN),
+    # Latin Extended Additional
+    (0x1E00, 0x1EFF, Alphabet.LATIN),
+    # Greek Extended
+    (0x1F00, 0x1FFF, Alphabet.GREEK),
+    # Khmer Symbols
+    (0x19E0, 0x19FF, Alphabet.KHMER),
+    # Latin Extended-C
+    (0x2C60, 0x2C7F, Alphabet.LATIN),
+    # Georgian Supplement
+    (0x2D00, 0x2D2F, Alphabet.GEORGIAN),
+    # Ethiopic Supplement
+    (0x2D80, 0x2DDF, Alphabet.ETHIOPIC),
+    # Cyrillic Extended-B
+    (0x2DE0, 0x2DFF, Alphabet.CYRILLIC),
+    # CJK Radicals Supplement + Kangxi Radicals (merged 2E80-2EFF, 2F00-2FD5)
+    (0x2E80, 0x2FD5, Alphabet.HAN),
+    # Hiragana
+    (0x3040, 0x309F, Alphabet.JA_KANA),
+    # Katakana
+    (0x30A0, 0x30FF, Alphabet.JA_KANA),
+    # Hangul Compatibility Jamo
+    (0x3130, 0x318F, Alphabet.HANGUL),
+    # Katakana Phonetic Extensions
+    (0x31F0, 0x31FF, Alphabet.JA_KANA),
+    # CJK Unified Ideographs Extension A
+    (0x3400, 0x4DBF, Alphabet.HAN),
+    # CJK Unified Ideographs
+    (0x4E00, 0x9FFF, Alphabet.HAN),
+    # Hangul Jamo Extended-A
+    (0xA960, 0xA97F, Alphabet.HANGUL),
+    # Cyrillic Extended-A
+    (0xA640, 0xA69F, Alphabet.CYRILLIC),
+    # Latin Extended-D
+    (0xA720, 0xA7FF, Alphabet.LATIN),
+    # Devanagari Extended
+    (0xA8E0, 0xA8FF, Alphabet.DEVANAGARI),
+    # Myanmar Extended-B
+    (0xAA60, 0xAA7F, Alphabet.MYANMAR),
+    # Ethiopic Extended-A
+    (0xAB00, 0xAB2F, Alphabet.ETHIOPIC),
+    # Latin Extended-E
+    (0xAB30, 0xAB6F, Alphabet.LATIN),
+    # Hangul Syllables + Jamo Extended-B (merged AC00-D7AF, D7B0-D7FF)
+    (0xAC00, 0xD7FF, Alphabet.HANGUL),
+    # CJK Compatibility Ideographs
+    (0xF900, 0xFAFF, Alphabet.HAN),
+    # Armenian ligatures
+    (0xFB00, 0xFB17, Alphabet.ARMENIAN),
+    # Hebrew presentation forms
+    (0xFB1D, 0xFB4F, Alphabet.HEBREW),
+    # Arabic presentation forms A
+    (0xFB50, 0xFDFF, Alphabet.ARABIC),
+    # Arabic presentation forms B
+    (0xFE70, 0xFEFF, Alphabet.ARABIC),
+    # Fullwidth Latin uppercase
+    (0xFF21, 0xFF3A, Alphabet.LATIN),
+    # Fullwidth Latin lowercase
+    (0xFF41, 0xFF5A, Alphabet.LATIN),
+    # Halfwidth Katakana
+    (0xFF66, 0xFF9F, Alphabet.JA_KANA),
+    # CJK Unified Ideographs Extension B
+    (0x20000, 0x2A6DF, Alphabet.HAN),
+    # CJK Unified Ideographs Extension C
+    (0x2A700, 0x2B73F, Alphabet.HAN),
+    # CJK Unified Ideographs Extension D
+    (0x2B740, 0x2B81F, Alphabet.HAN),
+]
+
+# Sort by range start and extract starts for bisect.
+_ALPHABET_RANGES.sort(key=lambda r: r[0])
+_RANGE_STARTS = [r[0] for r in _ALPHABET_RANGES]
 
 
 def get_alphabet(ch):
@@ -91,134 +219,11 @@ def get_alphabet(ch):
     if cp < 0x80:
         return Alphabet.LATIN if cp in _ASCII_LETTERS else Alphabet.UNKNOWN
 
-    # Extended Latin ranges
-    if (0x00C0 <= cp <= 0x024F  # Latin Extended-A, B
-            or 0x1E00 <= cp <= 0x1EFF  # Latin Extended Additional
-            or 0x2C60 <= cp <= 0x2C7F  # Latin Extended-C
-            or 0xA720 <= cp <= 0xA7FF  # Latin Extended-D
-            or 0xAB30 <= cp <= 0xAB6F  # Latin Extended-E
-            or 0xFF21 <= cp <= 0xFF3A  # Fullwidth Latin uppercase
-            or 0xFF41 <= cp <= 0xFF5A  # Fullwidth Latin lowercase
-            or 0x0100 <= cp <= 0x017F  # Latin Extended-A
-            or 0x0180 <= cp <= 0x024F):  # Latin Extended-B
-        return Alphabet.LATIN
-
-    # CJK Unified Ideographs (HAN)
-    if (0x4E00 <= cp <= 0x9FFF
-            or 0x3400 <= cp <= 0x4DBF
-            or 0x2E80 <= cp <= 0x2EFF
-            or 0x2F00 <= cp <= 0x2FD5
-            or 0xF900 <= cp <= 0xFAFF
-            or 0x20000 <= cp <= 0x2A6DF
-            or 0x2A700 <= cp <= 0x2B73F
-            or 0x2B740 <= cp <= 0x2B81F):
-        return Alphabet.HAN
-
-    # Japanese Kana
-    if (0x3040 <= cp <= 0x309F  # Hiragana
-            or 0x30A0 <= cp <= 0x30FF  # Katakana
-            or 0x31F0 <= cp <= 0x31FF  # Katakana Phonetic Extensions
-            or 0xFF66 <= cp <= 0xFF9F):  # Halfwidth Katakana
-        return Alphabet.JA_KANA
-
-    # Hangul
-    if (0xAC00 <= cp <= 0xD7AF  # Hangul Syllables
-            or 0x1100 <= cp <= 0x11FF  # Hangul Jamo
-            or 0x3130 <= cp <= 0x318F  # Hangul Compatibility Jamo
-            or 0xA960 <= cp <= 0xA97F  # Hangul Jamo Extended-A
-            or 0xD7B0 <= cp <= 0xD7FF):  # Hangul Jamo Extended-B
-        return Alphabet.HANGUL
-
-    # Cyrillic
-    if (0x0400 <= cp <= 0x04FF
-            or 0x0500 <= cp <= 0x052F
-            or 0x2DE0 <= cp <= 0x2DFF
-            or 0xA640 <= cp <= 0xA69F):
-        return Alphabet.CYRILLIC
-
-    # Arabic
-    if (0x0600 <= cp <= 0x06FF
-            or 0x0750 <= cp <= 0x077F
-            or 0x08A0 <= cp <= 0x08FF
-            or 0xFB50 <= cp <= 0xFDFF
-            or 0xFE70 <= cp <= 0xFEFF):
-        return Alphabet.ARABIC
-
-    # Greek
-    if 0x0370 <= cp <= 0x03FF or 0x1F00 <= cp <= 0x1FFF:
-        return Alphabet.GREEK
-
-    # Armenian
-    if 0x0530 <= cp <= 0x058F or 0xFB00 <= cp <= 0xFB17:
-        return Alphabet.ARMENIAN
-
-    # Hebrew
-    if 0x0590 <= cp <= 0x05FF or 0xFB1D <= cp <= 0xFB4F:
-        return Alphabet.HEBREW
-
-    # Devanagari
-    if 0x0900 <= cp <= 0x097F or 0xA8E0 <= cp <= 0xA8FF:
-        return Alphabet.DEVANAGARI
-
-    # Bengali
-    if 0x0980 <= cp <= 0x09FF:
-        return Alphabet.BENGALI
-
-    # Gurmukhi
-    if 0x0A00 <= cp <= 0x0A7F:
-        return Alphabet.GURMUKHI
-
-    # Gujarati
-    if 0x0A80 <= cp <= 0x0AFF:
-        return Alphabet.GUJARATI
-
-    # Tamil
-    if 0x0B80 <= cp <= 0x0BFF:
-        return Alphabet.TAMIL
-
-    # Telugu
-    if 0x0C00 <= cp <= 0x0C7F:
-        return Alphabet.TELUGU
-
-    # Kannada
-    if 0x0C80 <= cp <= 0x0CFF:
-        return Alphabet.KANNADA
-
-    # Malayalam
-    if 0x0D00 <= cp <= 0x0D7F:
-        return Alphabet.MALAYALAM
-
-    # Sinhala
-    if 0x0D80 <= cp <= 0x0DFF:
-        return Alphabet.SINHALA
-
-    # Thai
-    if 0x0E00 <= cp <= 0x0E7F:
-        return Alphabet.THAI
-
-    # Lao
-    if 0x0E80 <= cp <= 0x0EFF:
-        return Alphabet.LAO
-
-    # Myanmar
-    if 0x1000 <= cp <= 0x109F or 0xAA60 <= cp <= 0xAA7F:
-        return Alphabet.MYANMAR
-
-    # Georgian
-    if (0x10A0 <= cp <= 0x10FF
-            or 0x2D00 <= cp <= 0x2D2F
-            or 0x1C90 <= cp <= 0x1CBF):
-        return Alphabet.GEORGIAN
-
-    # Ethiopic
-    if (0x1200 <= cp <= 0x137F
-            or 0x1380 <= cp <= 0x139F
-            or 0x2D80 <= cp <= 0x2DDF
-            or 0xAB00 <= cp <= 0xAB2F):
-        return Alphabet.ETHIOPIC
-
-    # Khmer
-    if 0x1780 <= cp <= 0x17FF or 0x19E0 <= cp <= 0x19FF:
-        return Alphabet.KHMER
+    # Binary search over sorted range table.
+    i = bisect.bisect_right(_RANGE_STARTS, cp) - 1
+    if i >= 0:
+        _, end, alpha = _ALPHABET_RANGES[i]
+        if cp <= end:
+            return alpha
 
     return Alphabet.UNKNOWN

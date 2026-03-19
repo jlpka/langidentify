@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "langidentify"
-version = "1.0.1"
+version = "1.0.2"
 description = "Fast, high-accuracy language detection for Python. Uses ngram classification augmented with a topwords signal for improved short-text accuracy. Supports 80+ languages."
 readme = "README.md"
 license = "Apache-2.0"
@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Text Processing :: Linguistic",
 ]
 dependencies = [
-    "cjclassifier>=1.0.3",
+    "cjclassifier>=1.0.5",
 ]
 
 [project.optional-dependencies]
