@@ -1,0 +1,21 @@
+[package]
+name = "langidentify"
+version = "0.1.0"
+edition = "2021"
+description = "Fast, accurate language detection using n-gram and topword scoring"
+license = "Apache-2.0"
+
+[features]
+default = []
+lite = ["dep:langidentify-models-lite"]
+full = ["dep:langidentify-models-full"]
+
+[dependencies]
+flate2 = "1"
+log = "0.4"
+cjclassifier = "0.1.0"
+langidentify-models-lite = { path = "../langidentify-models-lite", optional = true }
+langidentify-models-full = { path = "../langidentify-models-full", optional = true }
+
+[dev-dependencies]
+langidentify-models-lite = { path = "../langidentify-models-lite" }

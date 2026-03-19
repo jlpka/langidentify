@@ -1,0 +1,6 @@
+[package]
+name = "langidentify-models-lite"
+version = "0.1.0"
+edition = "2021"
+description = "Lite model data for langidentify language detection"
+license = "Apache-2.0"

@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "langidentify",
+    "langidentify-models-lite",
+    "langidentify-models-full",
+]
+resolver = "2"

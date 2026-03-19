@@ -1,0 +1,31 @@
+[package]
+name = "langidentify-eval"
+version = "0.1.0"
+edition = "2021"
+description = "Evaluation and benchmarking tools for langidentify"
+license = "Apache-2.0"
+
+[[bin]]
+name = "adhoc"
+path = "src/adhoc.rs"
+
+[[bin]]
+name = "phrase-eval"
+path = "src/phrase_eval.rs"
+
+[[bin]]
+name = "detection-speed"
+path = "src/detection_speed.rs"
+
+[[bin]]
+name = "model-load-speed"
+path = "src/model_load_speed.rs"
+
+[lib]
+name = "langidentify_eval"
+path = "src/lib.rs"
+
+[dependencies]
+langidentify = { path = "../langidentify/langidentify" }
+langidentify-models-lite = { path = "../langidentify/langidentify-models-lite" }
+langidentify-models-full = { path = "../langidentify/langidentify-models-full" }
