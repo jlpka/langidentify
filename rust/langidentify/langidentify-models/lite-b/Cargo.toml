@@ -7,9 +7,9 @@ license = "Apache-2.0"
 authors = ["Jeremy Lilley <jeremy@jlilley.net>"]
 repository = "https://github.com/jlpka/langidentify"
 homepage = "https://github.com/jlpka/langidentify"
-readme = "../../README.md"
+readme = "../README.md"
 keywords = ["language-detection", "nlp", "ngram", "model-data"]
 categories = ["text-processing", "internationalization"]
 # Include data/ in the crates.io package even though it's gitignored.
 # Run `make data` (or the copy script) before `cargo publish`.
-include = ["src/", "build.rs", "data/", "README.md"]
+include = ["src/", "build.rs", "data/"]

@@ -31,7 +31,10 @@ accuracy on short sentences than existing libraries could provide.
 - **Extensible** -- adding a new language is straightforward if it has a reasonably sized
   Wikipedia edition
 
-## Quick start
+## Quick start (Java)
+
+For Rust, see the [Rust README](rust/langidentify/README.md).
+For Python, see the [Python README](python/README.md).
 
 ### Maven dependency
 
