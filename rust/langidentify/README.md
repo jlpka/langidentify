@@ -27,7 +27,7 @@ dependency instead:
 
 ```toml
 [dependencies]
-langidentify = { git = "https://github.com/jlpka/langidentify", subdirectory = "rust/langidentify/langidentify", features = ["full"] }
+langidentify = { git = "https://github.com/jlpka/langidentify", features = ["full"] }
 ```
 
 Or, if you have a local checkout:

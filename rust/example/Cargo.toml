@@ -5,4 +5,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
+# Lite model (from crates.io):
 langidentify = { version = "0.1.0", features = ["lite"] }
+# Full model (from git, ~89 MB — not on crates.io):
+# langidentify = { git = "https://github.com/jlpka/langidentify", features = ["full"] }
