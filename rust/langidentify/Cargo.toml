@@ -1,8 +1,10 @@
 [workspace]
 members = [
     "langidentify",
-    "langidentify-models-lite",
-    "langidentify-models-full",
+    "langidentify-models/lite",
+    "langidentify-models/lite-a",
+    "langidentify-models/lite-b",
+    "langidentify-models/full",
     "langidentify-ffi",
 ]
 resolver = "2"

@@ -16,7 +16,7 @@ From the workspace root (`rust/langidentify/`):
 # With the embedded lite model (~7 MB, recommended):
 cargo build --release -p langidentify-ffi --features lite
 
-# Or with the full model (~85 MB, higher accuracy):
+# Or with the full model (~89 MB, higher accuracy):
 cargo build --release -p langidentify-ffi --features full
 
 # Or without embedded models (use langid_model_load_path at runtime):

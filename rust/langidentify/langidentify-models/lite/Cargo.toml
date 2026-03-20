@@ -1,0 +1,20 @@
+[package]
+name = "langidentify-models-lite"
+version = "0.1.0"
+edition = "2021"
+description = "Lite embedded model data for the langidentify language detection library"
+license = "Apache-2.0"
+authors = ["Jeremy Lilley <jeremy@jlilley.net>"]
+repository = "https://github.com/jlpka/langidentify"
+homepage = "https://github.com/jlpka/langidentify"
+readme = "../../README.md"
+keywords = ["language-detection", "nlp", "ngram", "model-data"]
+categories = ["text-processing", "internationalization"]
+
+# The lite model data is split across two sub-crates to stay within the
+# crates.io 10 MB per-crate size limit (~17 MB total).
+# Part A: European Latin-script languages + skipwords + CJ classifier (~8.6 MB)
+# Part B: All other languages (African, Asian, Cyrillic, Arabic, etc.) (~8.4 MB)
+[dependencies]
+langidentify-models-lite-a = { version = "0.1.0", path = "../lite-a" }
+langidentify-models-lite-b = { version = "0.1.0", path = "../lite-b" }

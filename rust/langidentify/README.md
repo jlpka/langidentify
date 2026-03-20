@@ -17,17 +17,17 @@ Add langidentify to your `Cargo.toml` with a feature flag to select the model:
 ```toml
 [dependencies]
 langidentify = { version = "0.1", features = ["lite"] }
-# or features = ["full"] for higher accuracy at more memory cost
 ```
 
 The model data is pulled in transitively via the feature flag — no need to list model
 crates separately.
 
-Alternatively, depend on the git repository directly:
+For the **full model** (not published to crates.io due to its ~89 MB size), use a git
+dependency instead:
 
 ```toml
 [dependencies]
-langidentify = { git = "https://github.com/jlpka/langidentify", subdirectory = "rust/langidentify/langidentify", features = ["lite"] }
+langidentify = { git = "https://github.com/jlpka/langidentify", subdirectory = "rust/langidentify/langidentify", features = ["full"] }
 ```
 
 Or, if you have a local checkout:
@@ -35,6 +35,7 @@ Or, if you have a local checkout:
 ```toml
 [dependencies]
 langidentify = { path = "/path/to/langidentify/rust/langidentify/langidentify", features = ["lite"] }
+# or features = ["full"] with a local checkout
 ```
 
 ### Basic usage
@@ -44,36 +45,14 @@ use langidentify::{Language, Model, Detector};
 use std::sync::Arc;
 
 let languages = Language::from_comma_separated("en,fr,de,es").unwrap();
-let model = Arc::new(
-    Model::load_embedded(
-        langidentify_models_lite::resolve,
-        &languages,
-        -12.0, -12.0, 0.0,
-    ).unwrap()
-);
+let model = Arc::new(Model::load_lite(&languages).unwrap());
 let mut detector = Detector::new(model);
 
 assert_eq!(Language::French, detector.detect("Bonjour le monde"));
 assert_eq!(Language::English, detector.detect("The quick brown fox"));
 ```
 
-### Using feature flags
-
-Instead of depending on model crates directly, you can enable the `lite` or `full` feature
-on the `langidentify` crate itself:
-
-```toml
-[dependencies]
-langidentify = { git = "https://github.com/jlpka/langidentify", subdirectory = "rust/langidentify/langidentify", features = ["lite"] }
-```
-
-Then load with the convenience method:
-
-```rust
-let model = Arc::new(Model::load_lite(&languages).unwrap());
-```
-
-Use `features = ["full"]` and `Model::load_full()` for the full model.
+Use `Model::load_full()` for the full model (requires the `full` feature via git dependency).
 
 ## Inspecting results
 
@@ -129,6 +108,9 @@ Languages can be specified individually by ISO code or using group aliases:
 | `europe_west_common` | EFIGSNP + Nordic |
 | `europe_east_latin` | Albanian, Croatian, Czech, Estonian, Hungarian, Latvian, Lithuanian, Polish, Romanian, Slovak, Slovenian |
 | `europe_cyrillic` | Belarusian, Bulgarian, Macedonian, Russian, Serbian, Ukrainian |
+| `europe_common` | Western + Eastern European + Cyrillic |
+| `europe_latin` | All European Latin-script languages |
+| `europe` | All European languages (Latin + Cyrillic) |
 | `latin_alphabet` | All Latin-script languages |
 | `cyrillic_alphabet` | All Cyrillic-script languages |
 | `arabic_alphabet` | Arabic, Pashto, Persian, Urdu |
@@ -168,9 +150,11 @@ Both models are trained from the same Wikipedia data but cropped at different pr
 | Load time (10 langs) | ~0.1s | ~0.8s |
 | Best for | Most use cases | Maximum accuracy |
 
-The lite model is recommended for most applications. The full model provides a small accuracy
+The lite model is recommended for most applications and is available on
+[crates.io](https://crates.io/crates/langidentify). The full model provides a small accuracy
 improvement, especially on very short text (word pairs), at the cost of ~3x memory and slower
-load times.
+load times. Due to its size (~89 MB compressed), the full model is not published to crates.io
+and is available only via git or path dependency (see [Adding the dependency](#adding-the-dependency)).
 
 ## Performance
 
@@ -233,8 +217,11 @@ compiling/linking instructions, and thread-safety notes. A working C example is 
 ```
 langidentify/              Workspace root
   langidentify/            Core detection library
-  langidentify-models-lite/  Embedded lite model data (~7 MB compressed)
-  langidentify-models-full/  Embedded full model data (~85 MB compressed)
+  langidentify-models/     Model data crates
+    lite/                  Lite model facade (re-exports lite-a + lite-b)
+    lite-a/                Lite model part A: European Latin (~8.6 MB)
+    lite-b/                Lite model part B: rest of world (~8.4 MB)
+    full/                  Full model data (~89 MB compressed)
   langidentify-ffi/        C FFI bindings (cdylib + staticlib)
 ```
 
@@ -305,6 +292,29 @@ cargo run --release --bin detection-speed -- \
 cargo run --release --bin model-load-speed -- \
     --languages efigsnp,no,da,sv
 ```
+
+## Publishing to crates.io
+
+```bash
+cd rust/langidentify
+
+# 1. Copy model data from the Java project into crate data/ directories.
+bash scripts/copy_model_data.sh
+
+# 2. Dry run (verifies packaging without uploading).
+bash scripts/publish.sh
+
+# 3. Publish for real (requires `cargo login` first).
+bash scripts/publish.sh --execute
+```
+
+The publish script handles the correct dependency order (lite-a → lite-b → lite → langidentify)
+and temporarily removes the full-model dependency (which is git-only) from the main crate
+before uploading.
+
+Note: crates.io has a 10 MB per-crate size limit. The lite model data (~17 MB total) is split
+across two sub-crates (lite-a at ~8.6 MB and lite-b at ~8.4 MB) to stay within this limit.
+The full model (~89 MB) is too large for crates.io and is only available via git dependency.
 
 ## How it works
 

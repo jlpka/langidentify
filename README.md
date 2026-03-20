@@ -26,7 +26,7 @@ accuracy on short sentences than existing libraries could provide.
 
 - **Accuracy** -- blended ngram + topwords scoring, especially effective on short text
 - **Speed** -- open-addressing hash tables, zero allocations in the detection path, fixed arrays
-- **Low memory** -- the 28-language `europe_common` model is ~60 MB (lite) or ~285 MB (full) in Java;
+- **Low memory** -- the 28-language `europe_common` model is ~60 MB (lite) or ~306 MB (full) in Java;
   load only the languages you need
 - **Extensible** -- adding a new language is straightforward if it has a reasonably sized
   Wikipedia edition
@@ -114,19 +114,26 @@ loading time, memory usage, and detection latency. More importantly, closely rel
 can cross-detect on very short phrases -- for example, adding Luxembourgish when you only
 need German may cause short German phrases to be misidentified.
 
-In addition to being able to specify a list of languages, LangIdentify some group aliases for convenience:
+In addition to being able to specify a list of languages, LangIdentify provides group aliases
+for convenience:
 
 | Alias | Languages |
 |-------|-----------|
-| `latin_alphabet` | All Latin-script languages |
-| `cjk` | Chinese (Simplified), Chinese (Traditional), Japanese, Korean |
-| `cyrillic_alphabet` | All Cyrillic-script languages |
-| `unique_alphabet` | Languages where the alphabet implies a language, e.g. Thai or Greek |
-| `europe_west_common` | EFIGSNP + Danish, Swedish, Norwegian, Finnish |
-| `europe_common` | Western + Eastern European + Cyrillic |
 | `efigs` | English, French, Italian, German, Spanish |
 | `efigsnp` | EFIGS + Dutch, Portuguese |
 | `nordic` | Danish, Swedish, Norwegian, Finnish |
+| `cjk` | Chinese (Simplified), Chinese (Traditional), Japanese, Korean |
+| `europe_west_common` | EFIGSNP + Nordic |
+| `europe_east_latin` | Albanian, Croatian, Czech, Estonian, Hungarian, Latvian, Lithuanian, Polish, Romanian, Slovak, Slovenian |
+| `europe_cyrillic` | Belarusian, Bulgarian, Macedonian, Russian, Serbian, Ukrainian |
+| `europe_common` | Western + Eastern European + Cyrillic |
+| `europe_latin` | All European Latin-script languages |
+| `europe` | All European languages (Latin + Cyrillic) |
+| `latin_alphabet` | All Latin-script languages |
+| `cyrillic_alphabet` | All Cyrillic-script languages |
+| `arabic_alphabet` | Arabic, Pashto, Persian, Urdu |
+| `unique_alphabet` | Languages where the script implies the language (Thai, Greek, Armenian, Georgian, etc.) |
+| `all` | All 84 languages |
 
 ```java
 List<Language> langs = Language.fromCommaSeparated("europe_west_common,cjk");
@@ -141,7 +148,7 @@ Both models are trained from the same Wikipedia data but cropped at different pr
 | | Lite | Full |
 |---|---|---|
 | Log-probability floor | -12 (&#x2248; 6.1 &times; 10&#x207b;&#x2076;) | -15 (&#x2248; 3.1 &times; 10&#x207b;&#x2077;) |
-| Memory (28 langs) | ~60 MB | ~285 MB |
+| Memory (28 langs) | ~60 MB | ~306 MB |
 | Best for | Most use cases; good accuracy/memory balance | Maximum accuracy when memory is not a concern |
 
 ```java

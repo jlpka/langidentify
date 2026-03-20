@@ -32,8 +32,8 @@ path = "src/lib.rs"
 # Using local path dependencies (for development within this repo):
 [dependencies]
 langidentify = { path = "../langidentify/langidentify" }
-langidentify-models-lite = { path = "../langidentify/langidentify-models-lite" }
-langidentify-models-full = { path = "../langidentify/langidentify-models-full" }
+langidentify-models-lite = { path = "../langidentify/langidentify-models/lite" }
+langidentify-models-full = { path = "../langidentify/langidentify-models/full" }
 
 # To depend on the crates.io package instead, replace the above with:
 #
