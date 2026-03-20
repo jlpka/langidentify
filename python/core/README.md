@@ -1,10 +1,15 @@
-# LangIdentify
+# LangIdentify (Python)
 
-A fast, lightweight language detection library for Python. LangIdentify detects
-the language of text using a combination of ngram frequency analysis and
-whole-word ("topwords") frequency signals, both trained on the Wikipedia corpus.
-It supports 80+ languages across Latin, Cyrillic, Arabic, CJK, and many other
-scripts, and runs entirely offline with no network calls.
+A Python implementation of the [langidentify](https://github.com/jlpka/langidentify)
+language detection library. Detects 80+ languages using a combination of ngram frequency
+analysis and whole-word ("topwords") frequency signals, both trained on the Wikipedia corpus.
+Runs entirely offline with no network calls.
+
+This is a pure-Python port of the Java library, producing equivalent detection results
+from the same model data files. For maximum performance, consider the
+[Rust implementation](https://github.com/jlpka/langidentify/tree/main/rust/langidentify)
+or the [Rust FFI bindings](https://github.com/jlpka/langidentify/tree/main/rust/langidentify/langidentify-ffi)
+for use from C/C++.
 
 Most language detection libraries rely solely on character ngram models. While
 ngrams are an excellent primary signal, they struggle with short or ambiguous
@@ -99,11 +104,19 @@ Group aliases are supported for convenience:
 |-------|-----------|
 | `efigs` | English, French, Italian, German, Spanish |
 | `efigsnp` | EFIGS + Dutch, Portuguese |
-| `europe_west_common` | EFIGSNP + Nordic languages |
+| `nordic` | Danish, Swedish, Norwegian, Finnish |
+| `cjk` | Chinese (Simplified), Chinese (Traditional), Japanese, Korean |
+| `europe_west_common` | EFIGSNP + Nordic |
+| `europe_east_latin` | Albanian, Croatian, Czech, Estonian, Hungarian, Latvian, Lithuanian, Polish, Romanian, Slovak, Slovenian |
+| `europe_cyrillic` | Belarusian, Bulgarian, Macedonian, Russian, Serbian, Ukrainian |
 | `europe_common` | Western + Eastern European + Cyrillic |
-| `cjk` | Chinese (Simplified/Traditional), Japanese, Korean |
+| `europe_latin` | All European Latin-script languages |
+| `europe` | All European languages (Latin + Cyrillic) |
 | `latin_alphabet` | All Latin-script languages |
-| `unique_alphabet` | Languages where the script implies the language (e.g. Thai, Greek) |
+| `cyrillic_alphabet` | All Cyrillic-script languages |
+| `arabic_alphabet` | Arabic, Pashto, Persian, Urdu |
+| `unique_alphabet` | Languages where the script implies the language (Thai, Greek, Armenian, Georgian, etc.) |
+| `all` | All 84 languages |
 
 ```python
 languages = Language.from_comma_separated("europe_west_common,cjk")
@@ -179,7 +192,7 @@ lang = get_detector().detect(text)
 The language model needs to be loaded before the first detection, the
 expensive part is the initial load, subsequent accesses are cached.
 Load only the languages you need; each additional language adds to both load time
-and memory, though the "unique_alphabet" languages are mostly free (e.g. Thai or Greek can be deduced from their alphabets)
+and memory, though the "unique_alphabet" languages are mostly free (e.g. Thai or Greek can be deduced from their alphabets).
 
 ### Load time and memory (lite model)
 
@@ -197,9 +210,11 @@ load. For many applications the lite model is recommended.
 
 ### Detection throughput
 
-Detection runs at millions of words per second on a single core. Short phrases
-(1-5 words) are dominated by per-call overhead; longer text approaches peak
-throughput. `Detector` is lightweight to construct but not threadsafe,
+As a pure-Python implementation, detection runs at roughly ~180K words/s (~5,500
+ns/word) with 10 languages on the lite model. For comparison, the Java and Rust
+implementations run at ~3 Mwords/s (~330 ns/word) — about 14× faster. For
+latency-sensitive applications, consider the
+[Rust FFI bindings](https://github.com/jlpka/langidentify/tree/main/rust/langidentify/langidentify-ffi).
 
 ## Requirements
 

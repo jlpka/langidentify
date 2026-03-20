@@ -13,7 +13,7 @@ the caller.
 From the workspace root (`rust/langidentify/`):
 
 ```bash
-# With the embedded lite model (~7 MB, recommended):
+# With the embedded lite model (~17 MB, recommended):
 cargo build --release -p langidentify-ffi --features lite
 
 # Or with the full model (~89 MB, higher accuracy):

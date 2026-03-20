@@ -9,7 +9,10 @@ This directory contains two pip-installable Python packages:
 
 There is also an `eval/` directory with command-line tools for evaluation and
 benchmarking. These tools use the installed `langidentify` pip package (and its
-bundled model data), so either pip install langidentify (or pip install langidentify[full]) or make install first.
+bundled model data), so run `pip install langidentify` (or `pip install "langidentify[full]"`)
+or `make install` first.
+
+For the main project documentation, see the [top-level README](../README.md).
 
 | Tool | Description |
 |------|-------------|

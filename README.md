@@ -509,14 +509,22 @@ langidentify-parent
   rust/eval/                            Rust benchmarking/evaluation tools + C FFI example
 ```
 
-## Thread safety
+## Model loading and thread safety
 
-`Model` is heavyweight to load the first time (disk I/O), but the loaded data is cached as a
-static singleton. `Detector` is lightweight to construct and intentionally **not thread-safe**. For
-concurrent detection, use a separate instance per thread (e.g. via `ThreadLocal`):
+Loading a `Model` is the expensive step — it decompresses and indexes the model data from the
+bundled JAR resources. For the lite model with 10 languages this takes roughly 0.1 seconds and
+~17 MB of resident memory; with 28 languages, ~0.4 seconds and ~60 MB. Once loaded, the model
+is cached as a static singleton, so subsequent calls to `Model.loadLite()` with the same
+language set return immediately without reloading.
+
+Creating a `Detector` is cheap — it just allocates a small set of scoring arrays against the
+already-loaded model. However, `Detector` is intentionally **not thread-safe** (it reuses
+internal buffers across calls for performance). Use one `Detector` per thread or per class
+instance — there's no need to create a new one for every detection call, but don't share one
+across threads:
 
 ```java
-Model model = Model.loadLite(languages);  // shared, thread-safe
+Model model = Model.loadLite(languages);  // expensive once, then cached
 ThreadLocal<Detector> detector = ThreadLocal.withInitial(() -> new Detector(model));
 
 // In each thread:
